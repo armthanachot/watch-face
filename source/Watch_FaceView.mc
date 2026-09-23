@@ -316,16 +316,30 @@ class Watch_FaceView extends WatchUi.WatchFace {
     }
 
     function updateBackground(hour as Number, month as Number) as Void {
+        var season = getThaiSeason(month);
         var period = getBackgroundPeriod(hour);
+        var key = (season * 4) + period;
 
-        if (period == _backgroundKey) { return; }
+        if (key == _backgroundKey) { return; }
 
-        if (period == 0) { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgFullMorning); }
-        else if (period == 1) { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgFullDay); }
-        else if (period == 2) { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgFullEvening); }
-        else { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgFullNight); }
+        if (season == 0) {
+            if (period == 0) { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgHotMorning); }
+            else if (period == 1) { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgHotDay); }
+            else if (period == 2) { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgHotEvening); }
+            else { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgHotNight); }
+        } else if (season == 1) {
+            if (period == 0) { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgRainyMorning); }
+            else if (period == 1) { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgRainyDay); }
+            else if (period == 2) { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgRainyEvening); }
+            else { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgRainyNight); }
+        } else {
+            if (period == 0) { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgCoolMorning); }
+            else if (period == 1) { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgCoolDay); }
+            else if (period == 2) { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgCoolEvening); }
+            else { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgCoolNight); }
+        }
 
-        _backgroundKey = period;
+        _backgroundKey = key;
     }
 
 
