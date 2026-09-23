@@ -29,7 +29,7 @@ class Watch_FaceView extends WatchUi.WatchFace {
     const EVENING_START_HOUR = 16;
     const NIGHT_START_HOUR = 19;
 
-    var _mountainStrip;
+    var _fullBackground;
     var _backgroundKey = -1;
     var _metricFont;
     var _metricLabelFont;
@@ -84,8 +84,7 @@ class Watch_FaceView extends WatchUi.WatchFace {
 
         updateBackground(clockTime.hour, dateShort.month);
 
-        var dayRingColors = getDayRingColors(dateShort.year, dateShort.month, dateShort.day);
-        drawBackground(dc, width, height, cx, cy, dayRingColors);
+        drawBackground(dc, width, height);
         drawHero(dc, cx, cy, clockTime.sec);
         drawDate(dc, cx, cy, dateMedium);
         drawMainTime(dc, cx, cy, timeString);
@@ -96,24 +95,36 @@ class Watch_FaceView extends WatchUi.WatchFace {
         drawFooter(dc, cx, cy);
     }
 
-    function drawBackground(dc as Dc, width as Number, height as Number, cx as Number, cy as Number, ringColors) as Void {
+    function drawBackground(dc as Dc, width as Number, height as Number) as Void {
         dc.setColor(COLOR_BLACK, COLOR_BLACK);
         dc.fillRectangle(0, 0, width, height);
 
-        // Mountain art is the furthest-back layer.
-        if (_mountainStrip != null) {
-            var imageWidth = _mountainStrip.getWidth();
-            var imageX = cx - (imageWidth / 2);
-            var imageY = cy - 138;
-            dc.drawBitmap(imageX, imageY, _mountainStrip);
+        // Full-bleed mountain scene with no decorative border rings.
+        if (_fullBackground != null) {
+            drawCoverBitmap(dc, width, height, _fullBackground);
         }
+    }
 
-        // Two subtle rings. Keep the day color identity without overpowering content.
-        dc.setPenWidth(1);
-        dc.setColor(ringColors[0], Graphics.COLOR_TRANSPARENT);
-        dc.drawCircle(cx, cy, (width / 2) - 18);
-        dc.setColor(ringColors[1], Graphics.COLOR_TRANSPARENT);
-        dc.drawCircle(cx, cy, (width / 2) - 34);
+    function drawCoverBitmap(dc as Dc, width as Number, height as Number, bitmap) as Void {
+        var imageWidth = bitmap.getWidth();
+        var imageHeight = bitmap.getHeight();
+
+        var scaleX = width.toFloat() / imageWidth.toFloat();
+        var scaleY = height.toFloat() / imageHeight.toFloat();
+        var scale = (scaleX > scaleY) ? scaleX : scaleY;
+
+        var scaledWidth = imageWidth.toFloat() * scale;
+        var scaledHeight = imageHeight.toFloat() * scale;
+        var imageX = ((width.toFloat() - scaledWidth) / 2.0).toNumber();
+        var imageY = ((height.toFloat() - scaledHeight) / 2.0).toNumber();
+
+        var transform = new Graphics.AffineTransform();
+        transform.setToScale(scale, scale);
+
+        dc.drawBitmap2(imageX, imageY, bitmap, {
+            :transform => transform,
+            :filterMode => Graphics.FILTER_MODE_BILINEAR
+        });
     }
 
     function drawHero(dc as Dc, cx as Number, cy as Number, seconds as Number) as Void {
@@ -305,50 +316,19 @@ class Watch_FaceView extends WatchUi.WatchFace {
     }
 
     function updateBackground(hour as Number, month as Number) as Void {
-        var key = (getThaiSeason(month) * 4) + getBackgroundPeriod(hour);
-        if (key == _backgroundKey) { return; }
-        if (key == 0) { _mountainStrip = WatchUi.loadResource(Rez.Drawables.BgHotMorning); }
-        else if (key == 1) { _mountainStrip = WatchUi.loadResource(Rez.Drawables.BgHotDay); }
-        else if (key == 2) { _mountainStrip = WatchUi.loadResource(Rez.Drawables.BgHotEvening); }
-        else if (key == 3) { _mountainStrip = WatchUi.loadResource(Rez.Drawables.BgHotNight); }
-        else if (key == 4) { _mountainStrip = WatchUi.loadResource(Rez.Drawables.BgRainyMorning); }
-        else if (key == 5) { _mountainStrip = WatchUi.loadResource(Rez.Drawables.BgRainyDay); }
-        else if (key == 6) { _mountainStrip = WatchUi.loadResource(Rez.Drawables.BgRainyEvening); }
-        else if (key == 7) { _mountainStrip = WatchUi.loadResource(Rez.Drawables.BgRainyNight); }
-        else if (key == 8) { _mountainStrip = WatchUi.loadResource(Rez.Drawables.BgCoolMorning); }
-        else if (key == 9) { _mountainStrip = WatchUi.loadResource(Rez.Drawables.BgCoolDay); }
-        else if (key == 10) { _mountainStrip = WatchUi.loadResource(Rez.Drawables.BgCoolEvening); }
-        else { _mountainStrip = WatchUi.loadResource(Rez.Drawables.BgCoolNight); }
-        _backgroundKey = key;
+        var period = getBackgroundPeriod(hour);
+
+        if (period == _backgroundKey) { return; }
+
+        if (period == 0) { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgFullMorning); }
+        else if (period == 1) { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgFullDay); }
+        else if (period == 2) { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgFullEvening); }
+        else { _fullBackground = WatchUi.loadResource(Rez.Drawables.BgFullNight); }
+
+        _backgroundKey = period;
     }
 
-    function getDayRingColors(year as Number, month as Number, day as Number) {
-        // Sakamoto's algorithm: 0=Sunday ... 6=Saturday.
-        var offsets = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
-        var adjustedYear = year;
 
-        if (month < 3) {
-            adjustedYear -= 1;
-        }
-
-        var weekday = (
-            adjustedYear
-            + Math.floor(adjustedYear.toFloat() / 4.0).toNumber()
-            - Math.floor(adjustedYear.toFloat() / 100.0).toNumber()
-            + Math.floor(adjustedYear.toFloat() / 400.0).toNumber()
-            + offsets[month - 1]
-            + day
-        ) % 7;
-
-        // Muted outer + slightly brighter inner ring.
-        if (weekday == 0) { return [0x3B2025, 0x633039]; } // Sunday - red
-        if (weekday == 1) { return [0x3D3720, 0x665A2C]; } // Monday - yellow
-        if (weekday == 2) { return [0x40243A, 0x693553]; } // Tuesday - pink
-        if (weekday == 3) { return [0x1E392F, 0x2F5D4B]; } // Wednesday - green
-        if (weekday == 4) { return [0x402D20, 0x68472B]; } // Thursday - orange
-        if (weekday == 5) { return [0x203643, 0x31586A]; } // Friday - blue
-        return [0x302440, 0x513B6B];                       // Saturday - purple
-    }
 
     function getThaiSeason(month as Number) as Number {
         if ((month >= 3) && (month <= 5)) { return 0; }
