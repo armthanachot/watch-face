@@ -1,0 +1,15 @@
+<drawables xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://developer.garmin.com/downloads/connect-iq/resources.xsd">
+    <bitmap id="LauncherIcon" filename="launcher_icon.svg" dithering="none" />
+    <bitmap id="BgHotMorning" filename="bg_hot_morning.png" dithering="none" />
+    <bitmap id="BgHotDay" filename="bg_hot_day.png" dithering="none" />
+    <bitmap id="BgHotEvening" filename="bg_hot_evening.png" dithering="none" />
+    <bitmap id="BgHotNight" filename="bg_hot_night.png" dithering="none" />
+    <bitmap id="BgRainyMorning" filename="bg_rainy_morning.png" dithering="none" />
+    <bitmap id="BgRainyDay" filename="bg_rainy_day.png" dithering="none" />
+    <bitmap id="BgRainyEvening" filename="bg_rainy_evening.png" dithering="none" />
+    <bitmap id="BgRainyNight" filename="bg_rainy_night.png" dithering="none" />
+    <bitmap id="BgCoolMorning" filename="bg_cool_morning.png" dithering="none" />
+    <bitmap id="BgCoolDay" filename="bg_cool_day.png" dithering="none" />
+    <bitmap id="BgCoolEvening" filename="bg_cool_evening.png" dithering="none" />
+    <bitmap id="BgCoolNight" filename="bg_cool_night.png" dithering="none" />
+</drawables>

@@ -1,0 +1,9 @@
+Run Emu
+SDK="/Users/thanachottesjaroen/Library/Application Support/Garmin/ConnectIQ/Sdks/connectiq-sdk-mac-9.2.0-2026-06-09-92a1605b2"
+
+"$SDK/bin/connectiq"
+
+Cast UI
+SDK="/Users/thanachottesjaroen/Library/Application Support/Garmin/ConnectIQ/Sdks/connectiq-sdk-mac-9.2.0-2026-06-09-92a1605b2"
+
+"$SDK/bin/monkeydo" "/Users/thanachottesjaroen/Desktop/side_projects/Garmin/Watch_Face/bin/Watch_Face.prg" venu3
