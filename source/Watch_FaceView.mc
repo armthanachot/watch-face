@@ -38,6 +38,7 @@ class Watch_FaceView extends WatchUi.WatchFace {
     var _sideValueFont;
     var _dateFont;
     var _timeFont;
+    var _lastHeartRate = null;
 
     function initialize() {
         WatchFace.initialize();
@@ -132,24 +133,24 @@ class Watch_FaceView extends WatchUi.WatchFace {
 
         var microFont = (_microFont != null) ? _microFont : Graphics.FONT_XTINY;
         dc.setColor(COLOR_MUTED, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, cy - 66, microFont, "EXPLORE MORE TODAY", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(cx, cy - 54, microFont, "EXPLORE MORE TODAY", Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     function drawDate(dc as Dc, cx as Number, cy as Number, date) as Void {
         var dateFont = (_dateFont != null) ? _dateFont : Graphics.FONT_SMALL;
 
         dc.setColor(COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx - 47, cy - 48, dateFont, date.day_of_week, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(cx - 47, cy - 38, dateFont, date.day_of_week, Graphics.TEXT_JUSTIFY_CENTER);
 
         dc.setColor(COLOR_GOLD, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, cy - 48, dateFont, date.day, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(cx, cy - 38, dateFont, date.day, Graphics.TEXT_JUSTIFY_CENTER);
 
         dc.setColor(COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx + 49, cy - 48, dateFont, date.month, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(cx + 49, cy - 38, dateFont, date.month, Graphics.TEXT_JUSTIFY_CENTER);
 
         dc.setPenWidth(1);
         dc.setColor(COLOR_LINE, Graphics.COLOR_TRANSPARENT);
-        dc.drawLine(cx - 116, cy - 23, cx + 116, cy - 23);
+        dc.drawLine(cx - 116, cy - 15, cx + 116, cy - 15);
     }
 
     function drawMainTime(dc as Dc, cx as Number, cy as Number, timeString as String) as Void {
@@ -178,7 +179,9 @@ class Watch_FaceView extends WatchUi.WatchFace {
         var progress = dayOfYear.toFloat() / daysInYear.toFloat();
         var width = 146;
         var x = cx - (width / 2);
-        var y = cy + 60;
+        // Keep the progress footer inside the center information block and
+        // leave a clean gap before the lower gold divider in the background.
+        var y = cy + 46;
 
         dc.setColor(COLOR_DIM, COLOR_DIM);
         dc.fillRectangle(x, y, width, 4);
@@ -188,7 +191,7 @@ class Watch_FaceView extends WatchUi.WatchFace {
 
         var microFont = (_microFont != null) ? _microFont : Graphics.FONT_XTINY;
         dc.setColor(COLOR_MUTED, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, y + 8, microFont,
+        dc.drawText(cx, y + 7, microFont,
             "DAY " + dayOfYear.format("%d") + "/" + daysInYear.format("%d"),
             Graphics.TEXT_JUSTIFY_CENTER);
     }
@@ -358,12 +361,32 @@ class Watch_FaceView extends WatchUi.WatchFace {
     }
 
     function getHeartRate() {
-        var iterator = ActivityMonitor.getHeartRateHistory(1, true);
-        if (iterator != null) {
-            var sample = iterator.next();
-            if ((sample != null) && (sample.heartRate != null)) { return sample.heartRate; }
+        // Prefer SensorHistory on Venu 3 so every active 1 Hz onUpdate() reads
+        // the newest sensor-history sample available from the device.
+        var sensorIterator = SensorHistory.getHeartRateHistory({
+            :period => 1,
+            :order => SensorHistory.ORDER_NEWEST_FIRST
+        });
+        if (sensorIterator != null) {
+            var sensorSample = sensorIterator.next();
+            if ((sensorSample != null) && (sensorSample.data != null)) {
+                _lastHeartRate = Math.round(sensorSample.data.toFloat()).toNumber();
+                return _lastHeartRate;
+            }
         }
-        return null;
+
+        // Fallback to ActivityMonitor for compatibility / transient gaps.
+        var activityIterator = ActivityMonitor.getHeartRateHistory(1, true);
+        if (activityIterator != null) {
+            var activitySample = activityIterator.next();
+            if ((activitySample != null) && (activitySample.heartRate != null)) {
+                _lastHeartRate = activitySample.heartRate;
+                return _lastHeartRate;
+            }
+        }
+
+        // Keep the last valid BPM instead of flashing "--" between samples.
+        return _lastHeartRate;
     }
 
     function getCurrentElevation() {
